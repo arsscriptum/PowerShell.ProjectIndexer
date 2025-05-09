@@ -22,6 +22,122 @@ Add-SqlLiteTypes
 Add-Type -AssemblyName System.Windows.Forms
 Add-Type -AssemblyName System.Drawing
 
+
+
+function Show-ObjectTree {
+    [CmdletBinding(SupportsShouldProcess)]
+    param (
+        [Parameter(Mandatory = $true, ValueFromPipeline = $true, Position = 0)]
+        [Object]$RootObject,
+        [Parameter(Mandatory = $False)]
+        [string]$RootObjectName = "Root"
+    )
+
+    # Recursive helper function to add object nodes to the TreeView
+    function Add-Node {
+        param (
+            [System.Windows.Forms.TreeNode]$ParentNode,
+            [string]$Key,
+            [Object]$Value
+        )
+
+        if($Value -eq $Null){
+            $node = New-Object System.Windows.Forms.TreeNode
+            $node.Text = "$Key`: NULL"
+            [void]$ParentNode.Nodes.Add($node)
+            return
+        }
+        $type = $Value.GetType()
+
+        if ($Value -is [PSCustomObject]) {
+            # Handle PSCustomObject (key-value pairs)
+            $node = New-Object System.Windows.Forms.TreeNode
+            $node.Text = "$Key`: (Object)"
+            [void]$ParentNode.Nodes.Add($node)
+
+            $Value.PSObject.Properties | ForEach-Object {
+                Add-Node $node $_.Name $_.Value
+            }
+        }
+        elseif ($Value -is [Hashtable]) {
+            # Handle Hashtable (key-value pairs)
+            $node = New-Object System.Windows.Forms.TreeNode
+            $node.Text = "$Key`: (Hashtable)"
+            [void]$ParentNode.Nodes.Add($node)
+
+            $Value.GetEnumerator() | ForEach-Object {
+                Add-Node $node $_.Key $_.Value
+            }
+        }
+        elseif ($Value -is [System.Collections.ArrayList] -or $Value -is [Array]) {
+            # Handle arrays and ArrayLists
+            $node = New-Object System.Windows.Forms.TreeNode
+            $node.Text = "$Key`: (Array)"
+            [void]$ParentNode.Nodes.Add($node)
+
+            for ($i = 0; $i -lt $Value.Count; $i++) {
+                Add-Node $node "[$i]" $Value[$i]
+            }
+        }
+        else {
+            # Handle primitive values
+            $node = New-Object System.Windows.Forms.TreeNode
+            $node.Text = "$Key`: $Value [$type]"
+            [void]$ParentNode.Nodes.Add($node)
+        }
+    }
+
+    Add-Type -AssemblyName System.Windows.Forms
+    Add-Type -AssemblyName System.Drawing
+
+    $Form = New-Object System.Windows.Forms.Form
+    $Form.Text = "json inspect $RootObjectName"
+    [int]$TreeViewWndHeight = 640
+    [int]$TreeViewWndWidth = 480
+    $Form.Size = New-Object System.Drawing.Size($TreeViewWndHeight, $TreeViewWndWidth)
+    # Set the properties
+    $Form.StartPosition = "CenterScreen" # Set the startup location
+    $Form.FormBorderStyle = "FixedSingle" # Set the border style to SingleBorderWindow
+    $Form.MaximizeBox = $false          # Prevent resizing (disables the maximize button)
+    $TreeView = New-Object System.Windows.Forms.TreeView
+    $TreeView.Location = New-Object System.Drawing.Point(10, 10)
+    $TreeView.Size = New-Object System.Drawing.Size(($TreeViewWndHeight-30), ($TreeViewWndWidth - 50))
+    $Form.Controls.Add($TreeView)
+
+    # Create the root node
+    $rootNode = New-Object System.Windows.Forms.TreeNode
+    $rootNode.Text = "$RootObjectName"
+    [void]$TreeView.Nodes.Add($rootNode)
+
+    # Add the object structure to the TreeView
+    if ($RootObject -is [PSCustomObject]) {
+        $RootObject.PSObject.Properties | ForEach-Object {
+            Add-Node $rootNode $_.Name $_.Value
+        }
+    }
+    elseif ($RootObject -is [Hashtable]) {
+        $RootObject.GetEnumerator() | ForEach-Object {
+            Add-Node $rootNode $_.Key $_.Value
+        }
+    }
+    elseif ($RootObject -is [System.Collections.ArrayList] -or $RootObject -is [Array]) {
+        for ($i = 0; $i -lt $RootObject.Count; $i++) {
+            Add-Node $rootNode "[$i]" $RootObject[$i]
+        }
+    }
+    else {
+        Add-Node $rootNode "Value" $RootObject
+    }
+
+    $rootNode.Expand()
+
+    $Form.Add_Shown({$Form.Activate()})
+    [void]$Form.ShowDialog()
+
+    $Form.Dispose()
+}
+
+
 # Load data from DB
 $categories = Get-CategoryListFromDatabase | Select-Object -ExpandProperty Name
 $languages = Get-LanguageListFromDatabase | Select-Object -ExpandProperty Name
@@ -319,6 +435,21 @@ $textBoxKeywords.Add_TextChanged({
     Update-ProjectList -SelectedCategory $selectedCategory -SelectedLanguage $selectedLanguage -KeywordsPattern $keywords -Clear
 })
 
+$comboCategories.Add_SelectedIndexChanged({
+    $selectedCategory = $comboCategories.SelectedItem
+    $selectedLanguage = $comboLanguages.SelectedItem
+    $keywords = $textBoxKeywords.Text
+    Update-ProjectList -SelectedCategory $selectedCategory -SelectedLanguage $selectedLanguage -KeywordsPattern $keywords -Clear
+})
+
+$comboLanguages.Add_SelectedIndexChanged({
+    $selectedCategory = $comboCategories.SelectedItem
+    $selectedLanguage = $comboLanguages.SelectedItem
+    $keywords = $textBoxKeywords.Text
+    Update-ProjectList -SelectedCategory $selectedCategory -SelectedLanguage $selectedLanguage -KeywordsPattern $keywords -Clear
+})
+
+
 $buttonImportDir.Add_Click({
     if ($listBoxDirs.Items.Count -eq 0) {
         [System.Windows.Forms.MessageBox]::Show("The directory list is empty. Nothing to import.", "Info", 'OK', 'Information')
@@ -416,6 +547,32 @@ $menuItemOpenFolder.Add_Click({
         }
     }
 })
+
+$listViewProjects.Add_DoubleClick({
+    if ($listViewProjects.SelectedItems.Count -gt 0) {
+        $selectedItem = $listViewProjects.SelectedItems[0]
+        $proj = $selectedItem.Tag
+        $filePath = $proj.FilePath
+
+        if ([string]::IsNullOrWhiteSpace($filePath)) {
+            [System.Windows.Forms.MessageBox]::Show("No FilePath available for this project.", "Error", 'OK', 'Error')
+            return
+        }
+
+        if (!(Test-Path -Path $filePath -PathType Leaf)) {
+            [System.Windows.Forms.MessageBox]::Show("Project file not found: $filePath", "Error", 'OK', 'Error')
+            return
+        }
+
+        try {
+            $jsonContent = Get-Content -Path $filePath -Raw | ConvertFrom-Json
+            Show-ObjectTree $jsonContent 
+        } catch {
+            [System.Windows.Forms.MessageBox]::Show("Failed to load or parse the project JSON: $($_.Exception.Message)", "Error", 'OK', 'Error')
+        }
+    }
+})
+
 
 # === Splash Screen ===
 # === Splash Screen ===
