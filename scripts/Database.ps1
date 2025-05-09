@@ -148,6 +148,32 @@ function Write-DebugDbCommand {
 }
 
 
+function Remove-AllProjectsFromDatabase {
+    [CmdletBinding(SupportsShouldProcess)]
+    param()
+
+    # Connect to the SQLite database
+    $databasePath = Get-DatabaseFilePath
+    $connectionString = "Data Source=$databasePath;Version=3;"
+    $connection = New-Object System.Data.SQLite.SQLiteConnection ($connectionString)
+    $connection.Open()
+
+    try {
+        # Lookup the CountryId based on CountryCode
+        $lookupCommand = $connection.CreateCommand()
+        $DeleteStatement = "DELETE FROM Project;"
+        $lookupCommand.CommandText = $DeleteStatement
+        $RowsDeleted = $lookupCommand.ExecuteNonQuery()
+
+        $connection.Close()
+
+        Write-Host "SUCCESS Deleted $RowsDeleted Rows" -ForegroundColor DarkCyan
+
+    } catch {
+        throw $_
+    }
+}
+
 function Write-SqlScriptStats {
     [CmdletBinding(SupportsShouldProcess)]
     param(
@@ -474,32 +500,12 @@ WHERE PC.ProjectId = @ProjectId;
 }
 
 
-function Get-ProjectFiles {
-    [CmdletBinding(SupportsShouldProcess = $true)]
-    param (
-        [Parameter(Mandatory = $true, HelpMessage = 'Project title')]
-        [string]$Path
-    )
-
-    try{
-        [System.Collections.ArrayList]$ProjectFiles = [System.Collections.ArrayList]::new()
-        $AllFiles = Get-ChildItem -Path "$Path" -File -Filter "project.nfo" -Recurse -Depth 2 -ErrorAction Stop
-        ForEach($project in $AllFiles){
-            $Fullname = $project.FullName
-            $FileName = $project.Name
-            $JsonObject = Get-Content -Path $Fullname | ConvertFrom-Json
-            Add-Member -InputObject $JsonObject -MemberType NoteProperty -Name "FilePath" -Value "$Fullname"
-            [void]$ProjectFiles.Add($JsonObject)
-        }$ProjectFiles
-    }catch{}
-}
-
 
 function Import-ProjectFilesToDatabase {
     [CmdletBinding(SupportsShouldProcess = $true)]
     param (
         [Parameter(Mandatory = $true, HelpMessage = 'Root path where project data files are stored')]
-        [string]$Path
+        [string[]]$Path
     )
 
     $projectFiles = Get-ProjectFiles -Path $Path

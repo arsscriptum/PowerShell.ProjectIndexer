@@ -76,6 +76,25 @@ function Add-SqlLiteTypes {
 }
 
 
+function Get-ProjectFiles {
+    [CmdletBinding(SupportsShouldProcess = $true)]
+    param (
+        [Parameter(Mandatory = $true, HelpMessage = 'Project title')]
+        [string[]]$Path
+    )
+
+    try{
+        [System.Collections.ArrayList]$ProjectFiles = [System.Collections.ArrayList]::new()
+        $AllFiles = Get-ChildItem -Path $Path -File -Filter "project.nfo" -Recurse -Depth 2 -ErrorAction Stop
+        ForEach($project in $AllFiles){
+            $Fullname = $project.FullName
+            $FileName = $project.Name
+            $JsonObject = Get-Content -Path $Fullname | ConvertFrom-Json
+            Add-Member -InputObject $JsonObject -MemberType NoteProperty -Name "FilePath" -Value "$Fullname"
+            [void]$ProjectFiles.Add($JsonObject)
+        }$ProjectFiles
+    }catch{}
+}
 
 function Import-ProjectDirList {
     [CmdletBinding(SupportsShouldProcess = $true)]
