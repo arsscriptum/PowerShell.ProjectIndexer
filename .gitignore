@@ -1,0 +1,22 @@
+test/*.zip
+test/**
+
+
+serverlist.json
+
+
+results/**
+results
+
+
+ookla-speedtest-1.2.0-win64/**
+ookla-speedtest-1.2.0-win64
+ookla-speedtest-1.2.0-win64.zip
+
+ipinfo/** 
+ipinfo
+
+# test scripts
+
+test-*.ps1
+Test-*.ps1
