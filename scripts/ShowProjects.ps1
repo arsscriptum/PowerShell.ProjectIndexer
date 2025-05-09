@@ -33,8 +33,11 @@ $languagesList = @('ALL') + $languages
 # Create Form
 $form = New-Object System.Windows.Forms.Form
 $form.Text = "Project Browser"
-$form.Size = New-Object System.Drawing.Size(1000, 700)
+$form.Size = New-Object System.Drawing.Size(1000, 730)
 $form.StartPosition = "CenterScreen"
+$form.FormBorderStyle = 'FixedSingle'
+$form.MaximizeBox = $false
+$form.MinimizeBox = $true   # Or $false if you want to disable minimize too
 
 # === Search GroupBox === (Left)
 $groupBoxSearch = New-Object System.Windows.Forms.GroupBox
@@ -193,6 +196,16 @@ $listViewProjects.Columns.Add("Permalink", 150)
 $listViewProjects.Columns.Add("Categories", 100)
 $listViewProjects.Columns.Add("Languages", 100)
 $listViewProjects.Columns.Add("Keywords", 100)
+
+# === Copyright Label ===
+$labelCopyright = New-Object System.Windows.Forms.Label
+$labelCopyright.Text = "Copyright Guillaume Plante 2024"
+$labelCopyright.AutoSize = $true
+$labelCopyright.Font = New-Object System.Drawing.Font("Segoe UI", 8, [System.Drawing.FontStyle]::Regular)
+$labelCopyright.Location = New-Object System.Drawing.Point(20, 650)  # Adjust Y position as needed
+
+# Add to the Form
+$form.Controls.Add($labelCopyright)
 
 # Add ListView to Projects GroupBox
 $groupBoxProjects.Controls.Add($listViewProjects)
@@ -403,6 +416,53 @@ $menuItemOpenFolder.Add_Click({
         }
     }
 })
+
+# === Splash Screen ===
+# === Splash Screen ===
+$splash = New-Object System.Windows.Forms.Form
+$splash.FormBorderStyle = 'None'
+$splash.StartPosition = 'CenterScreen'
+$splash.Size = New-Object System.Drawing.Size(400, 200)
+$splash.BackColor = 'DarkGray'
+
+$ImgSplash = "$PSScriptRoot\splash.png"
+# ✅ Set background image
+$splash.BackgroundImage = [System.Drawing.Image]::FromFile($ImgSplash)
+$splash.BackgroundImageLayout = 'Stretch'   # Options: None, Tile, Center, Zoom, Stretch
+
+
+# Add a label for App name
+$labelAppName = New-Object System.Windows.Forms.Label
+$labelAppName.Text = "Project Browser"
+$labelAppName.BackColor = [System.Drawing.Color]::Transparent
+$labelAppName.ForeColor = [System.Drawing.Color]::White   # ✅ White text
+$labelAppName.Font = New-Object System.Drawing.Font("Segoe UI", 18, [System.Drawing.FontStyle]::Bold)
+$labelAppName.AutoSize = $true
+$labelAppName.Location = New-Object System.Drawing.Point(100, 50)
+
+$labelCopyrightSplash = New-Object System.Windows.Forms.Label
+$labelCopyrightSplash.Text = "© Guillaume Plante 2024"
+$labelCopyrightSplash.Font = New-Object System.Drawing.Font("Segoe UI", 10, [System.Drawing.FontStyle]::Bold)
+$labelCopyrightSplash.ForeColor = [System.Drawing.Color]::White   # ✅ White text
+$labelCopyrightSplash.BackColor = [System.Drawing.Color]::Transparent
+$labelCopyrightSplash.AutoSize = $true
+$labelCopyrightSplash.Location = New-Object System.Drawing.Point(10, 170)
+
+
+# Add controls to splash screen
+$splash.Controls.Add($labelAppName)
+$splash.Controls.Add($labelCopyrightSplash)
+
+
+# Show splash non-blocking
+$splash.TopMost = $true
+$splash.Show()
+
+# Wait a bit (simulate loading)
+Start-Sleep -Milliseconds 1500
+
+# Close splash
+$splash.Close()
 
 # --- Initial Load ---
 Update-ProjectList
