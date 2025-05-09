@@ -58,3 +58,6 @@ New-ProjectDataFile `
     -Permalink "https://github.com/arsscriptum/mseek" `
     -Thumbnail "https://github.com/arsscriptum/mseek/raw/refs/heads/mseek_stable/img/banner_s.png" | Set-Content "project.nfo"
 ```
+<p align="center">
+  <img src="img/screenshot.png" alt="Banner" style="max-width: 100%;">
+</p>
