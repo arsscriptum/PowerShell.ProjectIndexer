@@ -1,3 +1,13 @@
+#╔════════════════════════════════════════════════════════════════════════════════╗
+#║                                                                                ║
+#║   ShowProject.ps1                                                              ║
+#║                                                                                ║
+#╟────────────────────────────────────────────────────────────────────────────────╢
+#║   Guillaume Plante <codegp@icloud.com>                                         ║
+#║   Code licensed under the GNU GPL v3.0. See the LICENSE file for details.      ║
+#╚════════════════════════════════════════════════════════════════════════════════╝
+
+
 [CmdletBinding(SupportsShouldProcess = $true)]
 param ()
 
@@ -6,7 +16,7 @@ $CommonScript = "$PSScriptRoot\Common.ps1"
 
 $DatabaseScript = "$PSScriptRoot\Database.ps1"
 . "$DatabaseScript"
-
+Add-SqlLiteTypes
 
 
 Add-Type -AssemblyName System.Windows.Forms

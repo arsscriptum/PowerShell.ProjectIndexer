@@ -1,3 +1,13 @@
+#╔════════════════════════════════════════════════════════════════════════════════╗
+#║                                                                                ║
+#║   Database.ps1                                                                 ║
+#║                                                                                ║
+#╟────────────────────────────────────────────────────────────────────────────────╢
+#║   Guillaume Plante <codegp@icloud.com>                                         ║
+#║   Code licensed under the GNU GPL v3.0. See the LICENSE file for details.      ║
+#╚════════════════════════════════════════════════════════════════════════════════╝
+
+
 function Write-DebugLog {
     [CmdletBinding()]
     param(
@@ -551,7 +561,7 @@ function Import-ProjectFilesToDatabase {
         if ($project.Keywords) {
             $keywords = $project.Keywords
         }
-
+      try{
         # 🗂 Add project to database
         Add-ProjectToDatabase `
             -Title $project.Title `
@@ -564,7 +574,9 @@ function Import-ProjectFilesToDatabase {
             -LanguageIds $languageIds `
             -FilePath $project.FilePath `
             -CategoryIds @($categoryId)
-
+           }catch{
+            Write-Host "Failed To Add project `"$($project.Title)`""
+           }
         Write-Host "✅ Project '$($project.Title)' imported successfully."
     }
 }
@@ -664,8 +676,8 @@ VALUES (@Title, @Summary, @Author, @Date, @Keywords, @Permalink, @Thumbnail, @Fi
         Write-Host "✅ Transaction committed successfully."
 
     } catch {
-        Write-Error "❌ An error occurred: $_"
         $transaction.Rollback()
+        throw $_
     } finally {
         $connection.Close()
     }

@@ -21,6 +21,7 @@ function New-ProjectDataFile {
         [string[]]$Languages,
         [Parameter(Mandatory = $true, HelpMessage = 'Project category')]
         [string]$Category,
+        
         [Parameter(Mandatory = $true, HelpMessage = 'Project keywords')]
         [string[]]$Keywords,
 
